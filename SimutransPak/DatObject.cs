@@ -34,8 +34,8 @@ namespace SimutransPak
 
         #endregion
 
-        public Pak _pak { get; set; }
-        public DatFile _datFile { get; set; }
+        private Pak _pak { get; set; }
+        private DatFile _datFile { get; set; }
 
         private readonly Dictionary<string, string> _dictionary;
 
