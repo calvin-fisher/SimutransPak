@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -11,19 +12,37 @@ namespace SimutransPak
     /// </summary>
     public class DatObject
     {
-        public DatObject(IEnumerable<DictionaryEntry> elements)
+        #region Constructor/Factories
+
+        public DatObject(IEnumerable<DictionaryEntry> elements, Pak pak, DatFile file)
         {
+            _pak = pak;
+            _datFile = file;
             _dictionary = elements.ToDictionary(x => (string)x.Key, x => (string)x.Value);
         }
 
-        public Pak Pak { get; internal set; }
+        public static IEnumerable<DatObject> FindObjectsRecursive(string directory, Pak pak)
+        {
+            return FindObjectsRecursive(new DirectoryInfo(directory), pak);
+        }
+
+        public static IEnumerable<DatObject> FindObjectsRecursive(DirectoryInfo directory, Pak pak)
+        {
+            var files = DatFile.FindFilesRecursive(directory, pak);
+            return files.SelectMany(f => f.Objects);
+        }
+
+        #endregion
+
+        public Pak _pak { get; set; }
+        public DatFile _datFile { get; set; }
 
         private readonly Dictionary<string, string> _dictionary;
 
         #region Known Properties
 
         public string Name { get { return this["name"]; } }
-        public string NameTranslated { get { return Pak.TranslationFile != null ? Pak.TranslationFile[Name] : null; } }
+        public string NameTranslated { get { return _pak.TranslationFile != null ? _pak.TranslationFile[Name] : null; } }
         public string Obj { get { return this["obj"]; } }
         public string Waytype { get { return this["waytype"]; } }
         public int? IntroYear { get { return TryParse(this["intro_year"]); } }
@@ -42,9 +61,11 @@ namespace SimutransPak
         public int? Weight { get { return TryParse(this["weight"]); } }
         public int? Length { get { return TryParse(this["length"]); } }
         public string Freight { get { return this["freight"]; } }
-        public string FreightTranslated { get { return Pak.TranslationFile != null ? Pak.TranslationFile[Freight] : null; } }
+        public string FreightTranslated { get { return _pak.TranslationFile != null ? _pak.TranslationFile[Freight] : null; } }
         public int? Payload { get { return TryParse(this["payload"]); } }
         public int? OvercrowdedCapacity { get { return TryParse(this["overcrowded_capacity"]); } }
+        public int? Comfort { get { return TryParse(this["comfort"]); } }
+        public int? MinimumRunwayLength { get { return TryParse(this["minimum_runway_length"]); } }
 
         #endregion
 
@@ -67,14 +88,10 @@ namespace SimutransPak
         public override string ToString()
         {
             var sb = new StringBuilder();
-            sb.Append("{ ");
             foreach (var property in _dictionary)
             {
-                sb.AppendFormat("{0}: {1}, ", property.Key, property.Value);
+                sb.AppendLine(string.Format("{0}={1}", property.Key, property.Value));
             }
-            if (_dictionary.Count > 1)
-                sb.Remove(sb.Length - 2, 2);
-            sb.Append(" }");
 
             return sb.ToString();
         }
@@ -86,76 +103,5 @@ namespace SimutransPak
                        ? parsed
                        : (int?)null;
         }
-    }
-
-    public static class DatObjectExtensions
-    {
-        #region Vehicles
-
-        public static IEnumerable<DatObject> GetVehicles(this IEnumerable<DatObject> collection)
-        {
-            return collection.Where(x => x["obj"] == "vehicle");
-        }
-
-        public static IEnumerable<DatObject> GetTrains(this IEnumerable<DatObject> collection)
-        {
-            return collection.GetVehicles().Where(x => x["waytype"] == "track");
-        }
-
-        public static IEnumerable<DatObject> GetBuses(this IEnumerable<DatObject> collection)
-        {
-            return collection.GetVehicles().Where(x => x["waytype"] == "road");
-        }
-
-        public static IEnumerable<DatObject> GetShips(this IEnumerable<DatObject> collection)
-        {
-            return collection.GetVehicles().Where(x => x["waytype"] == "water");
-        }
-
-        public static IEnumerable<DatObject> GetNarrowgauge(this IEnumerable<DatObject> collection)
-        {
-            return collection.GetVehicles().Where(x => x["waytype"] == "narrowgauge_track");
-        }
-
-        public static IEnumerable<DatObject> GetTrams(this IEnumerable<DatObject> collection)
-        {
-            return collection.GetVehicles().Where(x => x["waytype"] == "tram_track");
-        }
-
-        #endregion
-
-        #region Waytypes
-
-        public static IEnumerable<DatObject> GetWaytypes(this IEnumerable<DatObject> collection)
-        {
-            return collection.Where(x => x["obj"] == "way");
-        }
-
-        public static IEnumerable<DatObject> GetTracks(this IEnumerable<DatObject> collection)
-        {
-            return collection.GetWaytypes().Where(x => x["waytype"] == "track");
-        }
-
-        public static IEnumerable<DatObject> GetRoads(this IEnumerable<DatObject> collection)
-        {
-            return collection.GetWaytypes().Where(x => x["waytype"] == "road");
-        }
-
-        public static IEnumerable<DatObject> GetRivers(this IEnumerable<DatObject> collection)
-        {
-            return collection.GetWaytypes().Where(x => x["waytype"] == "water");
-        }
-
-        public static IEnumerable<DatObject> GetNarrowgaugeTracks(this IEnumerable<DatObject> collection)
-        {
-            return collection.GetWaytypes().Where(x => x["waytype"] == "narrowgauge_track");
-        }
-
-        public static IEnumerable<DatObject> GetTramTracks(this IEnumerable<DatObject> collection)
-        {
-            return collection.GetWaytypes().Where(x => x["waytype"] == "tram_track");
-        }
-
-        #endregion
     }
 }

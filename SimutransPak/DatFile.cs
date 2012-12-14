@@ -5,8 +5,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace SimutransPak
 {
@@ -15,59 +13,33 @@ namespace SimutransPak
     /// </summary>
     public class DatFile
     {
-        private DatFile(FileInfo file)
+        #region Constructor/Factories
+
+        private DatFile(FileInfo file, Pak pak)
         {
+            _pak = pak;
+            SourceFile = file;
+
             var s = file.OpenRead();
             var sr = new StreamReader(s);
-            OriginalFile = sr.ReadToEnd();
+            var contents = sr.ReadToEnd();
 
-            var lines = OriginalFile.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries);
+            var lines = contents.Split(new[] {'\r', '\n'}, StringSplitOptions.RemoveEmptyEntries);
             _objects = ParseObjects(lines).ToList();
             Objects = new ReadOnlyCollection<DatObject>(_objects);
-        }
-
-        private IEnumerable<DatObject> ParseObjects(IEnumerable<string> lines)
-        {
-            var objects = new List<DatObject>();
-            var elements = new List<DictionaryEntry>();
-
-            foreach (string line in lines.Where(line => !string.IsNullOrEmpty(line) && line[0] != '#'))
-            {
-                if (line[0] == '-')
-                {
-                    objects.Add(new DatObject(elements));
-                    elements = new List<DictionaryEntry>();
-                    continue;
-                }
-
-                var equalsIndex = line.IndexOf('=');
-                if (equalsIndex < 0)
-                    continue;
-
-                var name = line.Substring(0, equalsIndex).TrimEnd(' ').ToLower();
-                var value = line.Substring(equalsIndex + 1).TrimStart(' ').TrimEnd(' ').ToLower();
-
-                elements.Add(new DictionaryEntry(name, value));
-            }
-
-            //Flush
-            if (elements.Count > 0)
-                objects.Add(new DatObject(elements));
-
-            return objects;
         }
 
         /// <summary>
         /// Factory pattern to return null for invalid input.
         /// </summary>
-        public static DatFile Create(FileInfo file)
+        public static DatFile Create(FileInfo file, Pak pak)
         {
             try
             {
                 if (!file.Exists)
                     return null;
 
-                var instance = new DatFile(file);
+                var instance = new DatFile(file, pak);
 
                 return instance;
             }
@@ -78,46 +50,79 @@ namespace SimutransPak
             }
         }
 
-        public string OriginalFile { get; private set; }
-
-        private readonly IList<DatObject> _objects;
-        public readonly ReadOnlyCollection<DatObject> Objects;
-
-        public static IEnumerable<DatObject> FindObjectsRecursive(string directory)
+        public static IEnumerable<DatFile> FindFilesRecursive(string directory, Pak pak)
         {
-            return FindObjectsRecursive(new DirectoryInfo(directory));
+            return FindFilesRecursive(new DirectoryInfo(directory), pak);
         }
 
-        public static IEnumerable<DatObject> FindObjectsRecursive(DirectoryInfo directory)
-        {
-            var files = FindFilesRecursive(directory);
-            return files.GetAllObjects();
-        }
-
-        public static IEnumerable<DatFile> FindFilesRecursive(string directory)
-        {
-            return FindFilesRecursive(new DirectoryInfo(directory));
-        }
-
-        public static IEnumerable<DatFile> FindFilesRecursive(DirectoryInfo directory)
+        public static IEnumerable<DatFile> FindFilesRecursive(DirectoryInfo directory, Pak pak)
         {
             if (!directory.Exists)
                 yield break;
 
-            var thisDirectory = directory.EnumerateFiles("*.dat").Select(DatFile.Create).Where(f => f != null);
+            var thisDirectory = directory
+                .GetFiles("*.dat")
+                .Select(f => DatFile.Create(f, pak))
+                .Where(f => f != null);
+
             foreach (var file in thisDirectory)
                 yield return file;
 
-            foreach (var subDirectoryFile in directory.GetDirectories().SelectMany(FindFilesRecursive))
-                yield return subDirectoryFile;
+            foreach (var subDirectory in directory.GetDirectories())
+                foreach (var subDirectoryFile in FindFilesRecursive(subDirectory, pak))
+                    yield return subDirectoryFile;
         }
-    }
 
-    public static class DatFileExtensions
-    {
-        public static IEnumerable<DatObject> GetAllObjects(this IEnumerable<DatFile> files)
+        #endregion
+
+        private Pak _pak { get; set; }
+        public FileInfo SourceFile { get; private set; }
+
+        private readonly IList<DatObject> _objects;
+        public readonly ReadOnlyCollection<DatObject> Objects;
+
+        public override string ToString()
         {
-            return files.SelectMany(x => x.Objects);
+            const string separator = "----------";
+
+            var objectStrings = _objects.Select(x => x.ToString());
+            var output = string.Join(Environment.NewLine + separator + Environment.NewLine, objectStrings);
+
+            return output;
+        }
+
+        private IEnumerable<DatObject> ParseObjects(IEnumerable<string> lines)
+        {
+            var objects = new List<DatObject>();
+            var elements = new List<DictionaryEntry>();
+
+            foreach (string line in lines.Where(line => !string.IsNullOrEmpty(line) && line[0] != '#'))
+            {
+                // Separator means finish the current object and start assembling a new one
+                if (line[0] == '-')
+                {
+                    if (elements.Any())
+                        objects.Add(new DatObject(elements, _pak, this));
+
+                    elements = new List<DictionaryEntry>();
+                    continue;
+                }
+
+                var equalsIndex = line.IndexOf('=');
+                if (equalsIndex < 0 || line.Length == equalsIndex + 1)
+                    continue;
+
+                var name = line.Substring(0, equalsIndex).TrimStart(' ').TrimEnd(' ').ToLower();
+                var value = line.Substring(equalsIndex + 1).TrimStart(' ').TrimEnd(' ').ToLower();
+
+                elements.Add(new DictionaryEntry(name, value));
+            }
+
+            // Flush last object if no trailing separator
+            if (elements.Any())
+                objects.Add(new DatObject(elements, _pak, this));
+
+            return objects;
         }
     }
 }

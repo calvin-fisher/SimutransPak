@@ -10,36 +10,18 @@ namespace SimutransPak
 {
     public class TranslationFile
     {
+        #region Constructor/Factories
+
         private TranslationFile(FileInfo file)
         {
             var s = file.OpenRead();
             var sr = new StreamReader(s);
             var contents = sr.ReadToEnd();
-            
-            var lines = contents.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+
+            var lines = contents.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             
             var entries = ParseFile(lines);
             _dictionary = entries.ToDictionary(x => (string)x.Key, x => (string)x.Value);
-        }
-
-        private Dictionary<string, string> ParseFile(string[] lines)
-        {
-            var dictionary = new Dictionary<string, string>();
-            string key = null;
-            foreach (var line in lines.Where(line => !string.IsNullOrEmpty(line) && line[0] != '#'))
-            {
-                if (key == null)
-                {
-                    key = line.ToLower();
-                    continue;
-                }
-
-                if (!dictionary.ContainsKey(key))
-                    dictionary.Add(key, line);
-
-                key = null;
-            }
-            return dictionary;
         }
 
         public static TranslationFile Create(FileInfo file)
@@ -59,6 +41,28 @@ namespace SimutransPak
             }
         }
 
+        #endregion
+
+        private Dictionary<string, string> ParseFile(IEnumerable<string> lines)
+        {
+            var dictionary = new Dictionary<string, string>();
+            string key = null;
+            foreach (var line in lines.Where(line => !string.IsNullOrEmpty(line) && line[0] != '#'))
+            {
+                if (key == null)
+                {
+                    key = line.ToLower();
+                    continue;
+                }
+
+                if (!dictionary.ContainsKey(key))
+                    dictionary.Add(key, line);
+
+                key = null;
+            }
+            return dictionary;
+        }
+
         private readonly Dictionary<string, string> _dictionary;
 
         public string this[string name]
@@ -76,6 +80,5 @@ namespace SimutransPak
         {
             return instance._dictionary;
         }
-
     }
 }
