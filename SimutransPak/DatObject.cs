@@ -14,10 +14,10 @@ namespace SimutransPak
     {
         #region Constructor/Factories
 
-        public DatObject(IEnumerable<DictionaryEntry> elements, Pak pak, DatFile file)
+        public DatObject(Dictionary<string, string> elements, Pak pak, DatFile file)
         {
-            _pak = pak;
-            _datFile = file;
+            Pak = pak;
+            DatFile = file;
             _dictionary = elements.ToDictionary(x => (string)x.Key, x => (string)x.Value);
         }
 
@@ -34,15 +34,15 @@ namespace SimutransPak
 
         #endregion
 
-        private Pak _pak { get; set; }
-        private DatFile _datFile { get; set; }
+        public Pak Pak { get; set; }
+        public DatFile DatFile { get; set; }
 
         private readonly Dictionary<string, string> _dictionary;
 
         #region Known Properties
 
         public string Name { get { return this["name"]; } }
-        public string NameTranslated { get { return _pak.TranslationFile != null ? _pak.TranslationFile[Name] : null; } }
+        public string NameTranslated { get { return Pak.TranslationFile != null ? Pak.TranslationFile[Name] : null; } }
         public string Obj { get { return this["obj"]; } }
         public string Waytype { get { return this["waytype"]; } }
         public int? IntroYear { get { return TryParse(this["intro_year"]); } }
@@ -61,7 +61,7 @@ namespace SimutransPak
         public int? Weight { get { return TryParse(this["weight"]); } }
         public int? Length { get { return TryParse(this["length"]); } }
         public string Freight { get { return this["freight"]; } }
-        public string FreightTranslated { get { return _pak.TranslationFile != null ? _pak.TranslationFile[Freight] : null; } }
+        public string FreightTranslated { get { return Pak.TranslationFile != null ? Pak.TranslationFile[Freight] : null; } }
         public int? Payload { get { return TryParse(this["payload"]); } }
         public int? OvercrowdedCapacity { get { return TryParse(this["overcrowded_capacity"]); } }
         public int? Comfort { get { return TryParse(this["comfort"]); } }

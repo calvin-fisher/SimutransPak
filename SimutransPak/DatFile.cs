@@ -17,7 +17,7 @@ namespace SimutransPak
 
         private DatFile(FileInfo file, Pak pak)
         {
-            _pak = pak;
+            Pak = pak;
             SourceFile = file;
 
             var s = file.OpenRead();
@@ -75,7 +75,7 @@ namespace SimutransPak
 
         #endregion
 
-        private Pak _pak { get; set; }
+        public Pak Pak { get; set; }
         public FileInfo SourceFile { get; private set; }
 
         private readonly IList<DatObject> _objects;
@@ -94,7 +94,7 @@ namespace SimutransPak
         private IEnumerable<DatObject> ParseObjects(IEnumerable<string> lines)
         {
             var objects = new List<DatObject>();
-            var elements = new List<DictionaryEntry>();
+            var elements = new Dictionary<string, string>();
 
             foreach (string line in lines.Where(line => !string.IsNullOrEmpty(line) && line[0] != '#'))
             {
@@ -102,9 +102,9 @@ namespace SimutransPak
                 if (line[0] == '-')
                 {
                     if (elements.Any())
-                        objects.Add(new DatObject(elements, _pak, this));
+                        objects.Add(new DatObject(elements, Pak, this));
 
-                    elements = new List<DictionaryEntry>();
+                    elements = new Dictionary<string, string>();
                     continue;
                 }
 
@@ -115,12 +115,15 @@ namespace SimutransPak
                 var name = line.Substring(0, equalsIndex).TrimStart(' ').TrimEnd(' ').ToLower();
                 var value = line.Substring(equalsIndex + 1).TrimStart(' ').TrimEnd(' ').ToLower();
 
-                elements.Add(new DictionaryEntry(name, value));
+                while (elements.ContainsKey(name))
+                    name += "_dup";
+                
+                elements.Add(name, value);
             }
 
             // Flush last object if no trailing separator
             if (elements.Any())
-                objects.Add(new DatObject(elements, _pak, this));
+                objects.Add(new DatObject(elements, Pak, this));
 
             return objects;
         }
