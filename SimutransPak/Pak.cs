@@ -43,68 +43,68 @@ namespace SimutransPak
 
         #region Vehicles
 
-        public IEnumerable<DatObject> GetVehicles()
+        public IEnumerable<DatObject> GetAllVehicles()
         {
             return _objects.Where(x => x["obj"] == "vehicle");
         }
 
-        public IEnumerable<DatObject> GetTrains()
+        public IEnumerable<DatObject> GetTrackVehicles()
         {
-            return GetVehicles().Where(x => x["waytype"] == "track");
+            return GetAllVehicles().Where(x => x["waytype"] == "track");
         }
 
-        public IEnumerable<DatObject> GetBuses()
+        public IEnumerable<DatObject> GetRoadVehicles()
         {
-            return GetVehicles().Where(x => x["waytype"] == "road");
+            return GetAllVehicles().Where(x => x["waytype"] == "road");
         }
 
-        public IEnumerable<DatObject> GetShips()
+        public IEnumerable<DatObject> GetWaterVehicles()
         {
-            return GetVehicles().Where(x => x["waytype"] == "water");
+            return GetAllVehicles().Where(x => x["waytype"] == "water");
         }
 
-        public IEnumerable<DatObject> GetNarrowgauge()
+        public IEnumerable<DatObject> GetNarrowgaugeVehicles()
         {
-            return GetVehicles().Where(x => x["waytype"] == "narrowgauge_track");
+            return GetAllVehicles().Where(x => x["waytype"] == "narrowgauge_track");
         }
 
-        public IEnumerable<DatObject> GetTrams()
+        public IEnumerable<DatObject> GetTramVehicles()
         {
-            return GetVehicles().Where(x => x["waytype"] == "tram_track");
+            return GetAllVehicles().Where(x => x["waytype"] == "tram_track");
         }
 
         #endregion
 
         #region Waytypes
 
-        public IEnumerable<DatObject> GetWaytypes()
+        public IEnumerable<DatObject> GetAllWays()
         {
             return _objects.Where(x => x["obj"] == "way");
         }
 
-        public IEnumerable<DatObject> GetTracks()
+        public IEnumerable<DatObject> GetTrackWays()
         {
-            return GetWaytypes().Where(x => x["waytype"] == "track");
+            return GetAllWays().Where(x => x["waytype"] == "track");
         }
 
-        public IEnumerable<DatObject> GetRoads()
+        public IEnumerable<DatObject> GetRoadWays()
         {
-            return GetWaytypes().Where(x => x["waytype"] == "road");
+            return GetAllWays().Where(x => x["waytype"] == "road");
         }
 
-        public IEnumerable<DatObject> GetRivers()
+        public IEnumerable<DatObject> GetWaterWays()
         {
-            return GetWaytypes().Where(x => x["waytype"] == "water");
+            return GetAllWays().Where(x => x["waytype"] == "water");
         }
 
-        public IEnumerable<DatObject> GetNarrowgaugeTracks()
+        public IEnumerable<DatObject> GetNarrowgaugeWays()
         {
-            return GetWaytypes().Where(x => x["waytype"] == "narrowgauge_track");
+            return GetAllWays().Where(x => x["waytype"] == "narrowgauge_track");
         }
 
-        public IEnumerable<DatObject> GetTramTracks()
+        public IEnumerable<DatObject> GetTramWays()
         {
-            return GetWaytypes().Where(x => x["waytype"] == "tram_track");
+            return GetAllWays().Where(x => x["waytype"] == "tram_track");
         }
 
         #endregion
